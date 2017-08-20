@@ -5,8 +5,8 @@ contract Splitter {
     address[] public receivers; // could add more users
     bool active;
 
-    function Splitter(address ethSender, address[] ethReceivers){
-        sender = ethSender;
+    function Splitter(address[] ethReceivers){
+        sender = msg.sender;
         receivers = ethReceivers;
         active = true;
     }
@@ -26,6 +26,7 @@ contract Splitter {
     }
 
     function kill(){
+        if (!active) throw;
         if (msg.sender != sender) throw;
         active = false;
     }
