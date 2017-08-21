@@ -15,18 +15,20 @@ contract Splitter {
         active = true;
     }
 
-    function join(){
+    function join() returns(bool){
         if (!active) throw;
         if (msg.sender == sender) throw; //optional - whether to allow owner
         if (receiverSearch[msg.sender]) throw; //don't add same twice
         receiverSearch[msg.sender] = true;
         receivers.push(msg.sender);
+        return true;
     }
 
-    function kill(){
+    function kill() returns (bool){
         if (!active) throw;
         if (msg.sender != sender) throw;
         active = false;
+        return true;
     }
 
     // use default function so it works with only sendTransaction
