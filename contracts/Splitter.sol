@@ -1,44 +1,32 @@
 pragma solidity ^0.4.6;
 
 contract Splitter {
-    address public sender;
-    address[] public receivers;
-    mapping(address => bool) receiverSearch;
-    bool active;
+    address public owner;
+    mapping(address => uint) public balances;
+    bool isActive;
 
-    function Splitter(address[] ethReceivers){
-        sender = msg.sender;
-        receivers = ethReceivers;
-        for(uint i = 0; i < ethReceivers.length; i++){
-            receiverSearch[ethReceivers[i]] = true;
-        }
-        active = true;
+    function Splitter(){
+      owner = msg.sender;
+      isActive = true;
     }
 
-    function join() returns(bool){
-        if (!active) throw;
-        if (msg.sender == sender) throw; //optional - whether to allow owner
-        if (receiverSearch[msg.sender]) throw; //don't add same twice
-        receiverSearch[msg.sender] = true;
-        receivers.push(msg.sender);
-        return true;
+    function split(address address1, address address2) payable returns (bool){
+      require(msg.value > 1);
+      assert(isActive);
+      balances[address1] += msg.value/2;
+      balances[address2] += msg.value/2;
+      balances[msg.sender] += msg.value % 2;
+      return true;
+    }
+
+    function claim() payable returns (bool){
+      require(balances[msg.sender] > 0);
+      return msg.sender.send(balances[msg.sender]);
     }
 
     function kill() returns (bool){
-        if (!active) throw;
-        if (msg.sender != sender) throw;
-        active = false;
+        require(msg.sender == owner);
+        isActive = false;
         return true;
-    }
-
-    // use default function so it works with only sendTransaction
-    function() payable {
-        if (!active) throw;
-        if (msg.sender == sender){
-            for(uint i =0; i < receivers.length; i++){
-                receivers[i].send(msg.value/receivers.length);
-            }
-            sender.send(msg.value % receivers.length);
-        }
     }
 }
