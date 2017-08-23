@@ -5,6 +5,10 @@ contract Splitter {
     mapping(address => uint) public balances;
     bool isActive;
 
+    event SplitSent(address indexed from, address add1, address add2, uint256 amount);
+    event Withdrawal(address indexed caller, uint256 amount);
+    event Killed();
+
     function Splitter(){
       owner = msg.sender;
       isActive = true;
@@ -16,6 +20,7 @@ contract Splitter {
       balances[address1] += msg.value/2;
       balances[address2] += msg.value/2;
       balances[msg.sender] += msg.value % 2;
+      SplitSent(msg.sender, address1, address2, msg.value);
       return true;
     }
 
@@ -24,14 +29,18 @@ contract Splitter {
       uint toSend = balances[msg.sender];
       balances[msg.sender] = 0;
       bool success = msg.sender.send(toSend);
-      if (!success)
+      if (success){
+        Withdrawal(msg.sender, toSend);
+      } else {
         balances[msg.sender] = toSend;
+      }
       return success;
     }
 
     function kill() returns (bool){
         require(msg.sender == owner);
         isActive = false;
+        Killed();
         return true;
     }
 }
