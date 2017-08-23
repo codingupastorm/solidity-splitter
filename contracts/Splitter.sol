@@ -21,7 +21,12 @@ contract Splitter {
 
     function claim() payable returns (bool){
       require(balances[msg.sender] > 0);
-      return msg.sender.send(balances[msg.sender]);
+      uint toSend = balances[msg.sender];
+      balances[msg.sender] = 0;
+      bool success = msg.sender.send(toSend);
+      if (!success)
+        balances[msg.sender] = toSend;
+      return success;
     }
 
     function kill() returns (bool){
