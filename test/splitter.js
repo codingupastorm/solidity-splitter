@@ -1,4 +1,6 @@
 var Splitter = artifacts.require('./Splitter.sol');
+const Promise = require('bluebird');
+Promise.promisifyAll(web3.eth, { suffix: "Promise" });
 
 contract('Splitter', function(accounts) {
   var splitter;
@@ -11,18 +13,17 @@ contract('Splitter', function(accounts) {
           .then(_splitter => splitter = _splitter);
   });
 
+  //Could look to use Promise.all here
   it("should split amount evenly between 2 accounts", function() {
+    var bobBalance, carolBalance;
     const toSplit = 1000;
     const afterSplit = 500;
-    var bobBalance = web3.eth.getBalance(bob).toNumber();
-    var carolBalance = web3.eth.getBalance(carol).toNumber();
-    return Splitter.deployed().then(function(instance) {
-      return instance.sendTransaction({from: alice, value: toSplit});
-    }).then(function(tx) {
-      assert.equal(web3.eth.getBalance(bob).toNumber(),
-      bobBalance + afterSplit, "Balance didn't increase by " + afterSplit);
-      assert.equal(web3.eth.getBalance(carol).toNumber(),
-      carolBalance + afterSplit, "Balance didn't increase by " + afterSplit);
-    });
+    return web3.eth.getBalancePromise(bob)
+      .then(balance => bobBalance = balance.toNumber())
+      .then(() => web3.eth.getBalancePromise(carol))
+      .then(balance => carolBalance = balance.toNumber())
+      .then(() => splitter.split.call(bob, carol, {from: alice, value: toSplit}))
+      .then(result => web3.eth.getBalancePromise(bob))
+      .then(newBalance => assert.equal(newBalance.toNumber(), bobBalance + afterSplit, "message"));
   });
 });
