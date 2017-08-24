@@ -3,11 +3,11 @@ pragma solidity ^0.4.6;
 contract Splitter {
     address public owner;
     mapping(address => uint) public balances;
-    bool isActive;
+    bool public isActive;
 
-    event SplitSent(address indexed from, address add1, address add2, uint256 amount);
-    event Withdrawal(address indexed caller, uint256 amount);
-    event Killed();
+    event LogSplitSent(address indexed from, address add1, address add2, uint256 amount);
+    event LogWithdrawal(address indexed caller, uint256 amount);
+    event LogKilled();
 
     function Splitter(){
       owner = msg.sender;
@@ -19,8 +19,9 @@ contract Splitter {
       assert(isActive);
       balances[address1] += msg.value/2;
       balances[address2] += msg.value/2;
-      balances[msg.sender] += msg.value % 2;
-      SplitSent(msg.sender, address1, address2, msg.value);
+      if (msg.value % 2 > 0)
+        balances[msg.sender] += 1;
+      LogSplitSent(msg.sender, address1, address2, msg.value);
       return true;
     }
 
@@ -30,7 +31,7 @@ contract Splitter {
       balances[msg.sender] = 0;
       bool success = msg.sender.send(toSend);
       if (success){
-        Withdrawal(msg.sender, toSend);
+        LogWithdrawal(msg.sender, toSend);
       } else {
         balances[msg.sender] = toSend;
       }
@@ -40,7 +41,11 @@ contract Splitter {
     function kill() returns (bool){
         require(msg.sender == owner);
         isActive = false;
-        Killed();
+        LogKilled();
         return true;
+    }
+
+    function() {
+      throw;
     }
 }
