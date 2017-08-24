@@ -13,17 +13,37 @@ contract('Splitter', function(accounts) {
           .then(_splitter => splitter = _splitter);
   });
 
-  //Could look to use Promise.all here
-  it("should split amount evenly between 2 accounts", function() {
-    var bobBalance, carolBalance;
+  it("should save ether between two accounts", function() {
     const toSplit = 1000;
     const afterSplit = 500;
-    return web3.eth.getBalancePromise(bob)
-      .then(balance => bobBalance = balance.toNumber())
-      .then(() => web3.eth.getBalancePromise(carol))
-      .then(balance => carolBalance = balance.toNumber())
-      .then(() => splitter.split.call(bob, carol, {from: alice, value: toSplit}))
-      .then(result => web3.eth.getBalancePromise(bob))
-      .then(newBalance => assert.equal(newBalance.toNumber(), bobBalance + afterSplit, "message"));
+    return splitter.split(bob, carol, {from: alice, value: toSplit})
+      .then(result => splitter.balances.call(bob))
+      .then(bobBalance => assert.equal(bobBalance, afterSplit))
+      .then(() => splitter.balances.call(carol))
+      .then(carolBalance => assert.equal(carolBalance, afterSplit));;
   });
+  //
+  // it("should split odd amount correctly", function() {
+  //   var aliceBalance, bobBalance, carolBalance;
+  //   const toSplit = 3;
+  //   const afterSplit = 1;
+  //   return web3.eth.getBalancePromise(alice)
+  //     .then(balance => aliceBalance = balance.toNumber())
+  //     .then(web3.eth.getBalancePromise(bob))
+  //     .then(balance => bobBalance = balance.toNumber())
+  //     .then(() => web3.eth.getBalancePromise(carol))
+  //     .then(balance => carolBalance = balance.toNumber())
+  //     .then(() => splitter.split.call(bob, carol, {from: alice, value: toSplit}))
+  //     .then(result => web3.eth.getBalancePromise(bob))
+  //     .then(newBalance => assert.equal(newBalance.toNumber(), bobBalance + afterSplit,
+  //      "balance should have increased by half of split amount - 1."))
+  //     .then(result => web3.eth.getBalancePromise(carol))
+  //     .then(newBalance => assert.equal(newBalance.toNumber(), carolBalance + afterSplit,
+  //      "balance should have increased by half of split amount - 1."))
+  //     .then(result => web3.eth.getBalancePromise(alice))
+  //     .then(newBalance => assert.equal(newBalance.toNumber(), aliceBalance + 1,
+  //       "balance should have increased by remainder."));
+  // });
+
+
 });
