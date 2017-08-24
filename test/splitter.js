@@ -1,9 +1,15 @@
 var Splitter = artifacts.require('./Splitter.sol');
 
 contract('Splitter', function(accounts) {
+  var splitter;
   const alice = accounts[0];
   const bob = accounts[1];
   const carol = accounts[2];
+
+  beforeEach("deploy a Splitter", function() {
+      return Splitter.new({ from: alice })
+          .then(_splitter => splitter = _splitter);
+  });
 
   it("should split amount evenly between 2 accounts", function() {
     const toSplit = 1000;
