@@ -50,4 +50,10 @@ contract('Splitter', function(accounts) {
     return splitter.split(bob, carol, {from: alice, value: toSplit})
   });
 
+  it("should fail on empty address", function() {
+    const toSplit = 1000;
+    //test how this reacts
+    return splitter.split(bob, "0x0", {from: alice, value: toSplit})
+  });
+
 });

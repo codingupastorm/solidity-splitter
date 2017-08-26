@@ -16,6 +16,8 @@ contract Splitter {
 
     function split(address address1, address address2) payable returns (bool){
       require(msg.value > 1);
+      assert(address1 != address(0));
+      assert(address2 != address(0));
       assert(isActive);
       balances[address1] += msg.value/2;
       balances[address2] += msg.value/2;
