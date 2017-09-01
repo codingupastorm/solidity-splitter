@@ -1,4 +1,3 @@
-web3.eth.getTransactionReceiptMined = require("../test/getTransactionReceiptMined.js");
 var Splitter = artifacts.require('./Splitter.sol');
 const Promise = require('bluebird');
 Promise.promisifyAll(web3.eth, {suffix: "Promise"});
@@ -57,11 +56,8 @@ contract('Splitter', function(accounts) {
   it('should fail on amount too small', function() {
     const toSplit = 1;
     return expectedExceptionPromise(function(){
-      return splitter.split(bob, carol, {
-        from: alice,
-        value: toSplit
-      }, 30000000000);
-    });//.then(result => assert.fail("Should have thrown error.")).catch(() => assert(true)); //Should also check it was not out of gas error
+      return splitter.split(bob, carol, {from: alice,value: toSplit, gas: 3000000});
+    }, 3000000);
   });
 
   // it("should fail on empty address", function() {
@@ -74,7 +70,51 @@ contract('Splitter', function(accounts) {
 
 });
 
+// Found here https://gist.github.com/xavierlepretre/88682e871f4ad07be4534ae560692ee6
+web3.eth.getTransactionReceiptMined = function (txnHash, interval) {
+  var transactionReceiptAsync;
+  interval = interval ? interval : 500;
+  transactionReceiptAsync = function(txnHash, resolve, reject) {
+    try {
+      var receipt = web3.eth.getTransactionReceipt(txnHash);
+      if (receipt == null) {
+        setTimeout(function () {
+          transactionReceiptAsync(txnHash, resolve, reject);
+        }, interval);
+      } else {
+        resolve(receipt);
+      }
+    } catch(e) {
+      reject(e);
+    }
+  };
 
+  return new Promise(function (resolve, reject) {
+      transactionReceiptAsync(txnHash, resolve, reject);
+  });
+};
+
+// Found here https://gist.github.com/xavierlepretre/afab5a6ca65e0c52eaf902b50b807401
+var getEventsPromise = function (myFilter, count) {
+  return new Promise(function (resolve, reject) {
+    count = count ? count : 1;
+    var results = [];
+    myFilter.watch(function (error, result) {
+      if (error) {
+        reject(error);
+      } else {
+        count--;
+        results.push(result);
+      }
+      if (count <= 0) {
+        resolve(results);
+        myFilter.stopWatching();
+      }
+    });
+  });
+};
+
+// Found here https://gist.github.com/xavierlepretre/d5583222fde52ddfbc58b7cfa0d2d0a9
 var expectedExceptionPromise = function (action, gasToUse) {
   return new Promise(function (resolve, reject) {
       try {
@@ -84,7 +124,7 @@ var expectedExceptionPromise = function (action, gasToUse) {
       }
     })
     .then(function (txn) {
-      // https://gist.github.com/xavierlepretre/88682e871f4ad07be4534ae560692ee6
+      console.log(txn);
       return web3.eth.getTransactionReceiptMined(txn);
     })
     .then(function (receipt) {
@@ -92,10 +132,8 @@ var expectedExceptionPromise = function (action, gasToUse) {
       assert.equal(receipt.gasUsed, gasToUse, "should have used all the gas");
     })
     .catch(function (e) {
-      if ((e + "").indexOf("invalid JUMP") > -1 || (e + "").indexOf("out of gas") > -1) {
+      if ((e + "").indexOf("invalid JUMP") > -1) {
         // We are in TestRPC
-      } else if ((e + "").indexOf("please check your gas amount") > -1) {
-        // We are in Geth for a deployment
       } else {
         throw e;
       }
